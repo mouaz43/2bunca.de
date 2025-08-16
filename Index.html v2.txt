@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1f160f" />
+  <title>BUNCA Specialty Orders — Static Demo v2 (Mobile)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            coffee: {50:'#f8f4f1',100:'#efe7e1',200:'#dfcfc3',300:'#c7a68e',400:'#a77b57',500:'#8b5a34',600:'#6b4226',700:'#4b2e1b',800:'#2b1a10',900:'#1f160f'}
+          },
+          boxShadow: { soft: '0 10px 30px rgba(0,0,0,0.08)' }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <style>
+    :root{ --bg:#f6f3ee; --ink:#1f160f; --accent:#8b5a34; }
+    body{ font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+    .h1{ font-family:"Playfair Display",serif; }
+    .card{ border:1px solid rgba(0,0,0,.08); background:#fff; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.04); }
+    .btn{ border-radius:14px; padding:.8rem 1rem; font-weight:600; min-height:44px; }
+    .btn-ghost{ border:1px solid rgba(0,0,0,.12); }
+    .btn-primary{ background:var(--ink); color:#fff; }
+    .btn-accent{ background:var(--accent); color:#fff; }
+    .input{ border:1px solid rgba(0,0,0,.15); border-radius:12px; padding:.9rem .9rem; min-height:44px; }
+    .pill{ border-radius:999px; border:1px solid rgba(0,0,0,.12); padding:.4rem .8rem; font-size:.85rem; }
+    .tab-active{ background:#fff; color:var(--ink); border-color:rgba(0,0,0,.16); }
+    .tab{ border:1px solid transparent; border-radius:12px; padding:.6rem .9rem; }
+    .grain:before{ content:''; position:fixed; inset:0; pointer-events:none; background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" opacity="0.06"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>'); mix-blend-mode:multiply; z-index:0; }
+    @supports (padding: max(0px)) { .safe-bottom{ padding-bottom:max(env(safe-area-inset-bottom),12px); } }
+  </style>
+</head>
+<body class="grain min-h-screen">
+  <header class="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-black/10">
+    <div class="max-w-7xl mx-auto px-3 md:px-4 py-3 flex items-center justify-between">
+      <a href="#/order" class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-coffee-600 text-white grid place-items-center text-lg shadow-soft">🫘</div>
+        <div>
+          <div class="h1 text-xl leading-tight">BUNCA Specialty</div>
+          <div class="text-xs text-black/60 -mt-1">Internal Orders</div>
+        </div>
+      </a>
+      <nav class="hidden md:flex items-center gap-2">
+        <a data-tab="#/order" class="tab">Order</a>
+        <a data-tab="#/review" class="tab">Confirm</a>
+        <a data-tab="#/inventory" class="tab admin-only">Inventory</a>
+        <a data-tab="#/edit" class="tab admin-only">Editor</a>
+        <a data-tab="#/settings" class="tab admin-only">Settings</a>
+      </nav>
+      <div class="flex items-center gap-2">
+        <div id="shopSwitch" class="hidden sm:flex items-center gap-1 rounded-2xl border border-black/10 p-1"></div>
+        <button id="adminToggle" class="btn btn-ghost">Admin</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="relative">
+    <img src="https://images.unsplash.com/photo-1498804103079-a6351b050096?q=80&w=1200&auto=format&fit=crop" class="w-full h-[22vh] md:h-[28vh] object-cover" alt="coffee hero">
+    <div class="absolute inset-0 bg-gradient-to-r from-black/30 to-black/0"></div>
+    <div class="absolute inset-0 max-w-7xl mx-auto px-4 flex items-end pb-4 md:pb-6">
+      <div class="text-white drop-shadow">
+        <h1 class="h1 text-2xl md:text-4xl">Fast, tidy, specialty-grade ordering.</h1>
+        <p class="text-white/85 text-sm md:text-base">Three shops. One storage. Crystal clear pick lists.</p>
+      </div>
+    </div>
+  </section>
+
+  <main class="max-w-7xl mx-auto px-3 md:px-4 py-6 pb-24"><div id="page"></div></main>
+
+  <nav class="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white/95 backdrop-blur border-t border-black/10 safe-bottom">
+    <div class="max-w-7xl mx-auto px-3 grid grid-cols-5 gap-1 text-xs text-center">
+      <a href="#/order" class="tab flex flex-col items-center py-2"><span>🛒</span><span>Order</span></a>
+      <a href="#/review" class="tab flex flex-col items-center py-2"><span>✅</span><span>Confirm</span></a>
+      <a href="#/inventory" class="tab admin-only flex flex-col items-center py-2 opacity-60"><span>📦</span><span>Inventory</span></a>
+      <a href="#/edit" class="tab admin-only flex flex-col items-center py-2 opacity-60"><span>✏️</span><span>Editor</span></a>
+      <a href="#/settings" class="tab admin-only flex flex-col items-center py-2 opacity-60"><span>⚙️</span><span>Settings</span></a>
+    </div>
+  </nav>
+
+  <footer class="border-t border-black/10 bg-white">
+    <div class="max-w-7xl mx-auto px-3 md:px-4 py-6 text-sm text-black/70 flex items-center justify-between">
+      <span>© <span id="year"></span> BUNCA Coffee</span>
+      <div class="flex items-center gap-3">
+        <a class="hover:text-black" href="mailto:mouazalmjarkesh@gmail.com">Owner Email</a>
+        <a class="hover:text-black" href="https://wa.me/017632100978" target="_blank">Owner WhatsApp</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const LS = { items:'bunca_v2m_items', shops:'bunca_v2m_shops', settings:'bunca_v2m_settings', admin:'bunca_v2m_admin', cart:'bunca_v2m_cart' };
+    const DEFAULT_SHOPS = [
+      { id:'city',  name:'City',         whatsapp:'' },
+      { id:'gruen', name:'Grüneburgweg', whatsapp:'' },
+      { id:'borne', name:'Bornheim',     whatsapp:'' },
+    ];
+    const DEFAULT_SETTINGS = { storageEmail:'lager@buncacoffee.de', storagePhone:'+4969123456' };
+    function uid(){ return (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)); }
+    function load(k,fb){ try{const raw=localStorage.getItem(k); return raw? JSON.parse(raw): fb;}catch{return fb;} }
+    function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+    function defaultItems(){ return [
+      { id:uid(), name:'Espresso 1kg', sku:'COF-ESP-1KG', unit:'bag',   stock_qty:24, min_stock:5,  category:'Coffee',     is_active:true },
+      { id:uid(), name:'Filter 1kg',   sku:'COF-FLT-1KG', unit:'bag',   stock_qty:18, min_stock:5,  category:'Coffee',     is_active:true },
+      { id:uid(), name:'Cups 200ml',   sku:'CUP-200',     unit:'sleeve',stock_qty:80, min_stock:20, category:'Packaging',  is_active:true },
+      { id:uid(), name:'Lids 200ml',   sku:'LID-200',     unit:'sleeve',stock_qty:60, min_stock:15, category:'Packaging',  is_active:true },
+      { id:uid(), name:'Oat Milk 1L',  sku:'OAT-1L',      unit:'box',   stock_qty:30, min_stock:6,  category:'Milk',       is_active:true },
+    ];}
+
+    const state = {
+      adminAuthed: load(LS.admin, false),
+      shops: load(LS.shops, DEFAULT_SHOPS),
+      settings: load(LS.settings, DEFAULT_SETTINGS),
+      items: load(LS.items, defaultItems()),
+      cart: load(LS.cart, { shopId:'city', q:{} }),
+      orderNotes: '',
+      filters: { search:'', cat:'All' },
+    };
+    function persist(){ save(LS.items, state.items); save(LS.shops, state.shops); save(LS.settings, state.settings); save(LS.admin, state.adminAuthed); save(LS.cart, state.cart); }
+
+    const routes = {
+      '/order': renderOrderPage,
+      '/review': renderReviewPage,
+      '/inventory': guardAdmin(renderInventoryPage),
+      '/edit': guardAdmin(renderEditPage),
+      '/settings': guardAdmin(renderSettingsPage),
+    };
+    function guardAdmin(fn){ return ()=> { if(!state.adminAuthed){ return renderAdminLock(); } return fn(); }; }
+    function navigate(hash){ location.hash = hash; }
+    function currentRoute(){ const h = location.hash || '#/order'; return h.replace('#',''); }
+
+    function setTabsActive(){
+      document.querySelectorAll('a.tab').forEach(a=>{
+        const target = a.getAttribute('href') || a.getAttribute('data-tab');
+        const same = (target === location.hash);
+        if (same) a.classList.add('tab-active'); else a.classList.remove('tab-active');
+        if (a.classList.contains('admin-only') && !state.adminAuthed) a.classList.add('opacity-60'); else a.classList.remove('opacity-60');
+      });
+    }
+    function renderShopSwitch(){
+      const box = document.getElementById('shopSwitch'); box.innerHTML=''; box.style.display='inline-flex';
+      state.shops.forEach(s=>{
+        const b = document.createElement('button');
+        b.className = 'pill ' + (state.cart.shopId===s.id? 'bg-white':'bg-transparent');
+        b.textContent = s.name;
+        b.onclick = ()=>{ state.cart.shopId = s.id; persist(); render(); };
+        box.appendChild(b);
+      });
+    }
+    function adminToggle(){
+      const btn = document.getElementById('adminToggle');
+      btn.textContent = state.adminAuthed ? 'Admin: On' : 'Admin';
+      btn.onclick = ()=>{
+        if (state.adminAuthed){ state.adminAuthed = false; persist(); render(); return; }
+        const pw = prompt('Admin password (demo)'); if (pw==='bunca123'){ state.adminAuthed = true; persist(); render(); } else if (pw) alert('Wrong password');
+      };
+    }
+
+    function renderOrderPage(){
+      const categories = ['All', ...Array.from(new Set(state.items.map(i=> i.category || 'Other')))];
+      const shop = state.shops.find(s=> s.id===state.cart.shopId);
+      const search = state.filters.search.toLowerCase();
+      const active = state.items.filter(i=> i.is_active !== false);
+      const filtered = active.filter(i=> (state.filters.cat==='All' || i.category===state.filters.cat) && (i.name.toLowerCase().includes(search) || i.sku.toLowerCase().includes(search)) )
+                             .sort((a,b)=> a.name.localeCompare(b.name));
+      const lines = Object.values(state.cart.q).reduce((acc,v)=> acc + (Number(v||0)>0?1:0), 0);
+
+      const right = `
+        <div class="card p-4 md:p-5 sticky top-24">
+          <div class="text-xs md:text-sm text-black/60">Shop</div>
+          <div class="h1 text-lg md:text-xl">${shop?.name || ''}</div>
+          <div class="mt-4">
+            <input id="search" class="input w-full" inputmode="search" placeholder="Search (name or SKU)" value="${state.filters.search}"/>
+            <div class="flex flex-wrap gap-2 mt-3">
+              ${categories.map(c=>`<button data-cat="${c}" class="pill ${c===state.filters.cat?'bg-white':''}">${c}</button>`).join('')}
+            </div>
+          </div>
+          <div class="mt-4 text-sm">Lines selected: <b>${lines}</b></div>
+          <button id="reviewBtn" class="btn btn-primary w-full mt-3">Review Order</button>
+          <p class="text-xs text-black/60 mt-2">You’ll confirm recipients and send the PDF on the next page.</p>
+        </div>`;
+
+      const grid = filtered.map(it=>{
+        const low = (it.stock_qty||0) < (it.min_stock||0);
+        const val = state.cart.q[it.id] || '';
+        return `
+          <div class="card p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="font-semibold">${it.name}</div>
+                <div class="text-xs text-black/60">${it.sku} • /${it.unit} • <span class="${low?'text-rose-600 font-semibold':''}">Stock: ${it.stock_qty||0}</span> • Min: ${it.min_stock||0}</div>
+              </div>
+              <span class="pill">${it.category||'Other'}</span>
+            </div>
+            <div class="mt-3 grid grid-cols-[1fr_auto_auto] gap-2 items-center">
+              <input data-qty="${it.id}" class="input w-full" placeholder="0" inputmode="numeric" pattern="[0-9]*" value="${val}"/>
+              <button data-plus="${it.id}" class="btn btn-ghost">+1</button>
+              <button data-clear="${it.id}" class="btn btn-ghost">Clear</button>
+            </div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('page').innerHTML = `
+        <div class="grid lg:grid-cols-[1fr_320px] gap-4 md:gap-6">
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">${grid || '<div class="text-black/60">No items match.</div>'}</div>
+          ${right}
+        </div>`;
+
+      document.getElementById('search').oninput = e=> { state.filters.search = e.target.value; render(); };
+      document.querySelectorAll('[data-cat]').forEach(b=> b.onclick = ()=>{ state.filters.cat = b.getAttribute('data-cat'); render(); });
+      document.getElementById('reviewBtn').onclick = ()=>{
+        const any = Object.values(state.cart.q).some(v=> Number(v||0) > 0);
+        if (!any) { alert('Please add at least one item.'); return; }
+        navigate('#/review');
+      };
+      document.querySelectorAll('[data-qty]').forEach(inp=>{
+        const id = inp.getAttribute('data-qty');
+        inp.oninput = (e)=>{
+          const it = state.items.find(x=>x.id===id);
+          const raw = e.target.value.replace(/[^0-9]/g,'');
+          const num = Math.min(Number(raw||0), Number(it.stock_qty||0));
+          state.cart.q[id] = num ? String(num) : '';
+          persist();
+        };
+        inp.onblur = ()=> render();
+      });
+      document.querySelectorAll('[data-plus]').forEach(btn=>{
+        const id = btn.getAttribute('data-plus');
+        btn.onclick = ()=>{
+          const it = state.items.find(x=>x.id===id);
+          const cur = Number(state.cart.q[id]||0);
+          const next = Math.min(cur+1, Number(it.stock_qty||0));
+          state.cart.q[id] = next ? String(next) : '';
+          persist(); render();
+        };
+      });
+      document.querySelectorAll('[data-clear]').forEach(btn=>{
+        const id = btn.getAttribute('data-clear');
+        btn.onclick = ()=>{ delete state.cart.q[id]; persist(); render(); };
+      });
+    }
+
+    function renderReviewPage(){
+      const shop = state.shops.find(s=> s.id===state.cart.shopId);
+      const lines = state.items.map(it=> ({...it, qty:Number(state.cart.q[it.id]||0)})).filter(l=> l.qty>0);
+      const totalLines = lines.length;
+      const summary = lines.map(l=> `<li class="flex items-center justify-between py-2"><span>${l.name} <span class="text-xs text-black/60">(${l.sku})</span></span><span class="font-semibold">${l.qty} /${l.unit}</span></li>`).join('');
+
+      document.getElementById('page').innerHTML = `
+        <div class="grid lg:grid-cols-2 gap-4 md:gap-6">
+          <div class="card p-4 md:p-5">
+            <div class="text-xs md:text-sm text-black/60">Shop</div>
+            <div class="h1 text-lg md:text-xl">${shop?.name || ''}</div>
+            <h3 class="font-semibold mt-4">Order Summary</h3>
+            <ul class="divide-y mt-2">${summary}</ul>
+            <div class="mt-4">
+              <label class="text-sm text-black/70">Notes</label>
+              <textarea id="notes" class="input w-full min-h-28 md:min-h-32" placeholder="Optional notes for storage">${state.orderNotes||''}</textarea>
+            </div>
+          </div>
+
+          <div class="card p-4 md:p-5">
+            <h3 class="font-semibold">Confirm & Send</h3>
+            <p class="text-sm text-black/60">Choose the WhatsApp number that should receive the PDF. You can also open an email draft.</p>
+
+            <div class="mt-3 space-y-2">
+              <label class="flex items-center gap-2"><input type="radio" name="wa" value="storage" checked> <span>Storage phone: <b>${state.settings.storagePhone}</b></span></label>
+              <label class="flex items-center gap-2"><input type="radio" name="wa" value="shop"> <span>${shop?.name} WhatsApp: <b>${(state.shops.find(s=>s.id===state.cart.shopId)?.whatsapp || '—')}</b></span></label>
+              <label class="flex items-center gap-2"><input type="radio" name="wa" value="custom"> <span>Custom number</span></label>
+              <input id="waCustom" class="input w-full" placeholder="+49176…" inputmode="tel" />
+            </div>
+
+            <div class="mt-4 flex items-center gap-2">
+              <button id="backBtn" class="btn btn-ghost">Back</button>
+              <button id="sendBtn" class="btn btn-accent">Generate PDF & Send</button>
+              <button id="emailBtn" class="btn btn-ghost">Email Draft</button>
+            </div>
+
+            <p class="mt-3 text-xs text-black/60">Lines: <b>${totalLines}</b>. Stock will be decremented in this demo after sending.</p>
+          </div>
+        </div>`;
+
+      document.getElementById('notes').oninput = e=> { state.orderNotes = e.target.value; persist(); };
+      document.getElementById('backBtn').onclick = ()=> navigate('#/order');
+
+      function pickNumber(){
+        const val = document.querySelector('input[name="wa"]:checked')?.value;
+        if (val==='storage') return state.settings.storagePhone;
+        if (val==='shop') return (state.shops.find(s=>s.id===state.cart.shopId)?.whatsapp || '');
+        if (val==='custom') return document.getElementById('waCustom').value;
+        return '';
+      }
+
+      async function generatePdf(lines){
+        try {
+          const { jsPDF } = window.jspdf || {}; if(!jsPDF) throw new Error('no jsPDF');
+          const doc = new jsPDF(); let y=16; const line=(t)=>{doc.text(t,14,y);y+=6;};
+          doc.setFontSize(16); line('BUNCA Coffee — Storage Pick List'); y+=2;
+          doc.setFontSize(12); line('Shop: '+(shop?.name||'')); line('Created: '+new Date().toLocaleString()); y+=2; line('Items:');
+          lines.forEach(l=>{ if(y>280){doc.addPage(); y=16;} line(`• ${l.name} (${l.sku}) — Qty: ${l.qty} ${l.unit}`); });
+          y+=2; line('Notes: '+(state.orderNotes||'—')); const filename=`Order_${shop?.id||'shop'}_${Date.now()}.pdf`; doc.save(filename); return filename;
+        } catch (e) {
+          const txt = ['BUNCA Coffee — Storage Pick List','Shop: '+(shop?.name||''),'Created: '+new Date().toLocaleString(),'','Items:', ...lines.map(l=> `- ${l.name} (${l.sku}) x ${l.qty} ${l.unit}`),'','Notes: '+(state.orderNotes||'—')].join('\n');
+          const blob = new Blob([txt], { type: 'text/plain' }); const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob); a.download = `Order_${shop?.id||'shop'}_${Date.now()}.txt`; a.click(); URL.revokeObjectURL(a.href);
+        }
+      }
+
+      document.getElementById('sendBtn').onclick = async ()=>{
+        if (!lines.length) { alert('No lines.'); return; }
+        const numberRaw = pickNumber(); const number = String(numberRaw||'').replace(/\D/g,'');
+        if (!number) { alert('Choose a WhatsApp number.'); return; }
+        await generatePdf(lines);
+        lines.forEach(l=>{ const it = state.items.find(x=>x.id===l.id); if (it) it.stock_qty = Math.max(0, (it.stock_qty||0) - l.qty); });
+        persist();
+        const waText = encodeURIComponent(`New order from ${shop?.name}:\n` + lines.map(l=> `${l.name} x ${l.qty}`).join('\n'));
+        window.open('https://wa.me/'+number+'?text='+waText, '_blank');
+        alert('PDF (or text) saved. WhatsApp draft opened.');
+        navigate('#/order');
+      };
+
+      document.getElementById('emailBtn').onclick = async ()=>{
+        if (!lines.length) { alert('No lines.'); return; }
+        await generatePdf(lines);
+        const subject = encodeURIComponent(`Order — ${shop?.name} → Storage`);
+        const body = encodeURIComponent(lines.map(l=> `${l.name} (${l.sku}) x ${l.qty}`).join('\n') + (state.orderNotes? `\n\nNotes: ${state.orderNotes}`:''));
+        const mailto = `mailto:${state.settings.storageEmail}?subject=${subject}&body=${body}`;
+        window.location.href = mailto;
+      };
+    }
+
+    function renderInventoryPage(){
+      const list = state.items.slice().sort((a,b)=> a.name.localeCompare(b.name)).map(it=>{
+        const low = (it.stock_qty||0) < (it.min_stock||0);
+        return `<div class="card p-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div class="font-semibold">${it.name}</div>
+              <div class="text-xs text-black/60">${it.sku} • /${it.unit} ${it.category? '• '+it.category:''}</div>
+            </div>
+            <div class="text-right">
+              <div class="${low?'text-rose-600 font-semibold':''}">Stock: ${it.stock_qty||0}</div>
+              <div class="text-xs text-black/60">Min: ${it.min_stock||0}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      document.getElementById('page').innerHTML = `
+        <div>
+          <h2 class="h1 text-xl md:text-2xl mb-4">Inventory (Admin)</h2>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">${list}</div>
+        </div>`;
+    }
+
+    function renderEditPage(){
+      const rows = state.items.slice().sort((a,b)=> a.name.localeCompare(b.name)).map(it=>{
+        return `<tr>
+          <td class="py-2">${it.name}<div class="text-xs text-black/60">(${it.sku})</div></td>
+          <td class="py-2">/${it.unit}</td>
+          <td class="py-2"><input data-stock="${it.id}" class="input w-24" inputmode="numeric" value="${it.stock_qty||0}"/></td>
+          <td class="py-2"><input data-min="${it.id}" class="input w-24" inputmode="numeric" value="${it.min_stock||0}"/></td>
+          <td class="py-2"><input data-cat="${it.id}" class="input w-28" value="${it.category||''}"/></td>
+          <td class="py-2"><button data-toggle="${it.id}" class="btn btn-ghost">${it.is_active!==false?'Disable':'Enable'}</button></td>
+          <td class="py-2"><button data-del="${it.id}" class="btn btn-ghost">Delete</button></td>
+        </tr>`;
+      }).join('');
+      document.getElementById('page').innerHTML = `
+        <div>
+          <h2 class="h1 text-xl md:text-2xl">Inventory Editor (Admin)</h2>
+          <div class="card p-4 mt-4">
+            <h3 class="font-semibold mb-3">Add Item</h3>
+            <div class="grid sm:grid-cols-6 gap-2">
+              <input id="addName" class="input" placeholder="Name" />
+              <input id="addSku" class="input" placeholder="SKU" />
+              <input id="addUnit" class="input" placeholder="Unit (box, sleeve…)" />
+              <input id="addStock" class="input" placeholder="Stock qty" inputmode="numeric" />
+              <input id="addMin" class="input" placeholder="Min stock" inputmode="numeric" />
+              <input id="addCat" class="input" placeholder="Category" />
+            </div>
+            <button id="addBtn" class="btn btn-primary mt-3">Add</button>
+          </div>
+
+          <div class="card p-4 mt-4 overflow-auto">
+            <table class="w-full text-sm">
+              <thead class="text-left text-black/60"><tr><th>Name</th><th>Unit</th><th>Stock</th><th>Min</th><th>Category</th><th>Status</th><th>Delete</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+
+          <div class="card p-4 mt-4">
+            <h3 class="font-semibold mb-3">CSV Tools</h3>
+            <div class="flex items-center gap-2">
+              <button id="exportCsv" class="btn btn-ghost">Export CSV</button>
+            </div>
+            <div class="mt-3">
+              <p class="text-sm text-black/60 mb-2">Paste CSV (name,sku,unit,stock_qty,min_stock,category) and click Import:</p>
+              <textarea id="csvText" class="input w-full min-h-28 md:min-h-32" placeholder="Espresso 1kg,COF-ESP-1KG,bag,24,5,Coffee"></textarea>
+              <button id="importCsv" class="btn btn-accent mt-2">Import CSV</button>
+            </div>
+          </div>
+        </div>`;
+
+      document.getElementById('addBtn').onclick = ()=> {
+        const name = document.getElementById('addName').value.trim();
+        const sku = document.getElementById('addSku').value.trim();
+        const unit = document.getElementById('addUnit').value.trim();
+        const stock = Number((document.getElementById('addStock').value||'').replace(/[^0-9]/g,''))||0;
+        const min   = Number((document.getElementById('addMin').value||'').replace(/[^0-9]/g,''))||0;
+        const cat   = document.getElementById('addCat').value.trim() || null;
+        if (!name || !sku || !unit) { alert('Fill name, SKU, unit'); return; }
+        state.items.push({ id:uid(), name, sku, unit, stock_qty:stock, min_stock:min, category:cat, is_active:true });
+        persist(); render();
+      };
+
+      document.querySelectorAll('[data-stock]').forEach(inp=> inp.oninput = e => {
+        const it = state.items.find(x=> x.id===inp.getAttribute('data-stock')); it.stock_qty = Number((e.target.value||'').replace(/[^0-9]/g,''))||0; persist();
+      });
+      document.querySelectorAll('[data-min]').forEach(inp=> inp.oninput = e => {
+        const it = state.items.find(x=> x.id===inp.getAttribute('data-min')); it.min_stock = Number((e.target.value||'').replace(/[^0-9]/g,''))||0; persist();
+      });
+      document.querySelectorAll('[data-cat]').forEach(inp=> inp.oninput = e => {
+        const it = state.items.find(x=> x.id===inp.getAttribute('data-cat')); it.category = e.target.value || null; persist();
+      });
+      document.querySelectorAll('[data-toggle]').forEach(btn=> btn.onclick = ()=> {
+        const it = state.items.find(x=> x.id===btn.getAttribute('data-toggle')); it.is_active = !(it.is_active!==false); persist(); render();
+      });
+      document.querySelectorAll('[data-del]').forEach(btn=> btn.onclick = ()=> {
+        const id = btn.getAttribute('data-del'); if (confirm('Delete item?')) { state.items = state.items.filter(x=> x.id!==id); persist(); render(); }
+      });
+
+      document.getElementById('exportCsv').onclick = ()=>{
+        const header = "name,sku,unit,stock_qty,min_stock,category\n";
+        const rows = state.items.map(i=> [i.name, i.sku, i.unit, i.stock_qty||0, i.min_stock||0, i.category||''].map(v=> String(v).replaceAll(',', ' ')).join(',')).join('\n');
+        const csv = header + rows + '\n';
+        const blob = new Blob([csv], { type:'text/csv' }); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='items.csv'; a.click(); URL.revokeObjectURL(a.href);
+      };
+      document.getElementById('importCsv').onclick = ()=>{
+        const txt = document.getElementById('csvText').value; if(!txt.trim()){ alert('Paste CSV'); return; }
+        const lines = txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean); let start=0; if(lines[0].toLowerCase().startsWith('name,')) start=1;
+        for(let i=start;i<lines.length;i++){ const p=lines[i].split(','); if(p.length<3) continue; const [name,sku,unit,stock='0',min='0',cat=''] = p;
+          const ex = state.items.find(x=> x.sku===sku.trim()); const rec = { id: ex? ex.id: uid(), name:name.trim(), sku:sku.trim(), unit:unit.trim(), stock_qty:Number(stock)||0, min_stock:Number(min)||0, category: (cat||'').trim() || null, is_active:true };
+          if (ex) Object.assign(ex, rec); else state.items.push(rec);
+        }
+        persist(); render(); alert('Import complete.');
+      };
+    }
+
+    function renderSettingsPage(){
+      const shopRows = state.shops.map(s=> `
+        <div class="flex items-center gap-2">
+          <span class="w-32 md:w-40">${s.name}</span>
+          <input data-wa="${s.id}" class="input flex-1" placeholder="+49176…" value="${s.whatsapp||''}"/>
+        </div>`).join('');
+      document.getElementById('page').innerHTML = `
+        <div>
+          <h2 class="h1 text-xl md:text-2xl">Settings (Admin)</h2>
+          <div class="grid lg:grid-cols-2 gap-4 md:gap-6 mt-4">
+            <div class="card p-4">
+              <h3 class="font-semibold mb-2">Storage Contacts</h3>
+              <input id="storageEmail" class="input w-full mb-2" placeholder="Storage email" value="${state.settings.storageEmail||''}"/>
+              <input id="storagePhone" class="input w-full" placeholder="Storage phone" value="${state.settings.storagePhone||''}"/>
+            </div>
+            <div class="card p-4">
+              <h3 class="font-semibold mb-2">Shop WhatsApp Numbers</h3>
+              <div class="space-y-2">${shopRows}</div>
+            </div>
+          </div>
+        </div>`;
+      document.getElementById('storageEmail').oninput = e=> { state.settings.storageEmail = e.target.value; persist(); };
+      document.getElementById('storagePhone').oninput = e=> { state.settings.storagePhone = e.target.value; persist(); };
+      document.querySelectorAll('[data-wa]').forEach(inp=> inp.oninput = e=>{
+        const s = state.shops.find(x=> x.id===inp.getAttribute('data-wa')); s.whatsapp = e.target.value; persist();
+      });
+    }
+
+    function renderAdminLock(){
+      document.getElementById('page').innerHTML = `
+        <div class="card p-6 max-w-md">
+          <h2 class="h1 text-2xl">Admin only</h2>
+          <p class="text-black/70 mt-2">This page is for admins. Tap <b>Admin</b> in the header and enter <b>bunca123</b> to unlock.</p>
+        </div>`;
+    }
+
+    function render(){
+      document.getElementById('year').textContent = new Date().getFullYear();
+      setTabsActive(); renderShopSwitch(); adminToggle();
+      const route = currentRoute(); const fn = routes[route] || renderOrderPage; fn();
+    }
+    window.addEventListener('hashchange', ()=>{ setTabsActive(); render(); });
+    if (!location.hash) location.hash = '#/order';
+    render();
+  </script>
+</body>
+</html>
