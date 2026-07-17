@@ -1,0 +1,8 @@
+{
+  "name": "connect-apps-plugin",
+  "version": "0.1.0",
+  "description": "Discover, connect, and troubleshoot app connections (MCP servers and connectors) from inside Claude Code.",
+  "author": {
+    "name": "mouaz43"
+  }
+}
