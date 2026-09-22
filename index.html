@@ -29,6 +29,7 @@
     .btn-ghost{ border:1px solid rgba(0,0,0,.12); }
     .btn-primary{ background:var(--ink); color:#fff; }
     .btn-accent{ background:var(--accent); color:#fff; }
+    .btn-danger{ border:1px solid rgba(220,38,38,.35); color:#b91c1c; }
     .input{ border:1px solid rgba(0,0,0,.15); border-radius:12px; padding:.9rem .9rem; min-height:44px; }
     .pill{ border-radius:999px; border:1px solid rgba(0,0,0,.12); padding:.4rem .8rem; font-size:.85rem; }
     .tab-active{ background:#fff; color:var(--ink); border-color:rgba(0,0,0,.16); }
@@ -39,7 +40,7 @@
 </head>
 <body class="grain min-h-screen">
   <header class="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-black/10">
-    <div class="max-w-7xl mx-auto px-3 md:px-4 py-3 flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-3 md:px-4 py-3 flex flex-wrap items-center justify-between gap-y-2">
       <a href="#/order" class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-coffee-600 text-white grid place-items-center text-lg shadow-soft">🫘</div>
         <div>
@@ -47,15 +48,15 @@
           <div class="text-xs text-black/60 -mt-1">Internal Orders</div>
         </div>
       </a>
-      <nav class="hidden md:flex items-center gap-2">
+      <nav class="hidden lg:flex items-center gap-2">
         <a data-tab="#/order" class="tab">Order</a>
         <a data-tab="#/review" class="tab">Confirm</a>
         <a data-tab="#/inventory" class="tab admin-only">Inventory</a>
         <a data-tab="#/edit" class="tab admin-only">Editor</a>
         <a data-tab="#/settings" class="tab admin-only">Settings</a>
       </nav>
-      <div class="flex items-center gap-2">
-        <div id="shopSwitch" class="hidden sm:flex items-center gap-1 rounded-2xl border border-black/10 p-1"></div>
+      <div class="flex items-center gap-2 flex-wrap justify-end">
+        <div id="shopSwitch" class="flex flex-wrap items-center gap-1 rounded-2xl border border-black/10 p-1"></div>
         <button id="adminToggle" class="btn btn-ghost">Admin</button>
       </div>
     </div>
@@ -74,7 +75,7 @@
 
   <main class="max-w-7xl mx-auto px-3 md:px-4 py-6 pb-24"><div id="page"></div></main>
 
-  <nav class="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white/95 backdrop-blur border-t border-black/10 safe-bottom">
+  <nav class="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-white/95 backdrop-blur border-t border-black/10 safe-bottom">
     <div class="max-w-7xl mx-auto px-3 grid grid-cols-5 gap-1 text-xs text-center">
       <a href="#/order" class="tab flex flex-col items-center py-2"><span>🛒</span><span>Order</span></a>
       <a href="#/review" class="tab flex flex-col items-center py-2"><span>✅</span><span>Confirm</span></a>
@@ -95,7 +96,7 @@
   </footer>
 
   <script>
-    const LS = { items:'bunca_v2m_items', shops:'bunca_v2m_shops', settings:'bunca_v2m_settings', admin:'bunca_v2m_admin', cart:'bunca_v2m_cart' };
+    const LS = { items:'bunca_v2m_items', shops:'bunca_v2m_shops', settings:'bunca_v2m_settings', admin:'bunca_v2m_admin', cart:'bunca_v2m_cart', orders:'bunca_v2m_orders' };
     const DEFAULT_SHOPS = [
       { id:'city',  name:'City',         whatsapp:'' },
       { id:'gruen', name:'Grüneburgweg', whatsapp:'' },
@@ -119,10 +120,11 @@
       settings: load(LS.settings, DEFAULT_SETTINGS),
       items: load(LS.items, defaultItems()),
       cart: load(LS.cart, { shopId:'city', q:{} }),
+      orders: load(LS.orders, []),
       orderNotes: '',
       filters: { search:'', cat:'All' },
     };
-    function persist(){ save(LS.items, state.items); save(LS.shops, state.shops); save(LS.settings, state.settings); save(LS.admin, state.adminAuthed); save(LS.cart, state.cart); }
+    function persist(){ save(LS.items, state.items); save(LS.shops, state.shops); save(LS.settings, state.settings); save(LS.admin, state.adminAuthed); save(LS.cart, state.cart); save(LS.orders, state.orders); }
 
     const routes = {
       '/order': renderOrderPage,
@@ -144,7 +146,10 @@
       });
     }
     function renderShopSwitch(){
-      const box = document.getElementById('shopSwitch'); box.innerHTML=''; box.style.display='inline-flex';
+      // Do not force display via inline style here - it would override the "hidden sm:flex"
+      // classes that are supposed to hide this switcher on narrow phone screens, blowing out
+      // the header layout. Let the existing Tailwind classes control visibility per breakpoint.
+      const box = document.getElementById('shopSwitch'); box.innerHTML='';
       state.shops.forEach(s=>{
         const b = document.createElement('button');
         b.className = 'pill ' + (state.cart.shopId===s.id? 'bg-white':'bg-transparent');
@@ -183,6 +188,7 @@
           </div>
           <div class="mt-4 text-sm">Lines selected: <b>${lines}</b></div>
           <button id="reviewBtn" class="btn btn-primary w-full mt-3">Review Order</button>
+          ${lines>0 ? '<button id="clearOrderBtn" class="btn btn-ghost w-full mt-2">Clear order</button>' : ''}
           <p class="text-xs text-black/60 mt-2">You’ll confirm recipients and send the PDF on the next page.</p>
         </div>`;
 
@@ -207,8 +213,8 @@
       }).join('');
 
       document.getElementById('page').innerHTML = `
-        <div class="grid lg:grid-cols-[1fr_320px] gap-4 md:gap-6">
-          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">${grid || '<div class="text-black/60">No items match.</div>'}</div>
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 md:gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">${grid || '<div class="text-black/60">No items match.</div>'}</div>
           ${right}
         </div>`;
 
@@ -218,6 +224,10 @@
         const any = Object.values(state.cart.q).some(v=> Number(v||0) > 0);
         if (!any) { alert('Please add at least one item.'); return; }
         navigate('#/review');
+      };
+      const clearOrderBtn = document.getElementById('clearOrderBtn');
+      if (clearOrderBtn) clearOrderBtn.onclick = ()=>{
+        if (confirm('Clear all quantities for this order?')) { state.cart.q = {}; persist(); render(); }
       };
       document.querySelectorAll('[data-qty]').forEach(inp=>{
         const id = inp.getAttribute('data-qty');
@@ -252,8 +262,19 @@
       const totalLines = lines.length;
       const summary = lines.map(l=> `<li class="flex items-center justify-between py-2"><span>${l.name} <span class="text-xs text-black/60">(${l.sku})</span></span><span class="font-semibold">${l.qty} /${l.unit}</span></li>`).join('');
 
+      if (!totalLines) {
+        document.getElementById('page').innerHTML = `
+          <div class="card p-6 max-w-md">
+            <h2 class="h1 text-2xl">Nothing to confirm</h2>
+            <p class="text-black/70 mt-2">Your order is empty. Go back and add some quantities first.</p>
+            <button id="backBtnEmpty" class="btn btn-primary mt-4">Back to Order</button>
+          </div>`;
+        document.getElementById('backBtnEmpty').onclick = ()=> navigate('#/order');
+        return;
+      }
+
       document.getElementById('page').innerHTML = `
-        <div class="grid lg:grid-cols-2 gap-4 md:gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           <div class="card p-4 md:p-5">
             <div class="text-xs md:text-sm text-black/60">Shop</div>
             <div class="h1 text-lg md:text-xl">${shop?.name || ''}</div>
@@ -282,7 +303,7 @@
               <button id="emailBtn" class="btn btn-ghost">Email Draft</button>
             </div>
 
-            <p class="mt-3 text-xs text-black/60">Lines: <b>${totalLines}</b>. Stock will be decremented in this demo after sending.</p>
+            <p class="mt-3 text-xs text-black/60">Lines: <b>${totalLines}</b>. Stock will be decremented in this demo after sending, and the order form will clear so it can't be sent twice by accident.</p>
           </div>
         </div>`;
 
@@ -312,12 +333,28 @@
         }
       }
 
+      function recordAndClearOrder(lines){
+        state.orders.unshift({
+          id: uid(),
+          shopId: state.cart.shopId,
+          shopName: shop?.name || '',
+          createdAt: Date.now(),
+          notes: state.orderNotes || '',
+          lines: lines.map(l=> ({ name:l.name, sku:l.sku, qty:l.qty, unit:l.unit }))
+        });
+        // Cap history so localStorage never grows unbounded.
+        if (state.orders.length > 200) state.orders.length = 200;
+        state.cart.q = {};
+        state.orderNotes = '';
+      }
+
       document.getElementById('sendBtn').onclick = async ()=>{
         if (!lines.length) { alert('No lines.'); return; }
         const numberRaw = pickNumber(); const number = String(numberRaw||'').replace(/\D/g,'');
         if (!number) { alert('Choose a WhatsApp number.'); return; }
         await generatePdf(lines);
         lines.forEach(l=>{ const it = state.items.find(x=>x.id===l.id); if (it) it.stock_qty = Math.max(0, (it.stock_qty||0) - l.qty); });
+        recordAndClearOrder(lines);
         persist();
         const waText = encodeURIComponent(`New order from ${shop?.name}:\n` + lines.map(l=> `${l.name} x ${l.qty}`).join('\n'));
         window.open('https://wa.me/'+number+'?text='+waText, '_blank');
@@ -351,11 +388,40 @@
           </div>
         </div>`;
       }).join('');
+
+      const recentOrders = state.orders.slice(0, 20).map(o=>{
+        const lineText = o.lines.map(l=> `${l.name} x ${l.qty}`).join(', ');
+        return `<div class="card p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-semibold">${o.shopName || 'Shop'} <span class="text-xs text-black/60 font-normal">${new Date(o.createdAt).toLocaleString()}</span></div>
+              <div class="text-xs text-black/60 mt-1 break-words">${lineText}</div>
+              ${o.notes ? `<div class="text-xs text-black/50 mt-1">Notes: ${o.notes}</div>` : ''}
+            </div>
+            <button data-del-order="${o.id}" class="btn btn-ghost btn-danger shrink-0">Delete</button>
+          </div>
+        </div>`;
+      }).join('');
+
       document.getElementById('page').innerHTML = `
         <div>
           <h2 class="h1 text-xl md:text-2xl mb-4">Inventory (Admin)</h2>
-          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">${list}</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">${list}</div>
+
+          <h2 class="h1 text-xl md:text-2xl mb-4 mt-10">Recent Orders</h2>
+          <p class="text-sm text-black/60 -mt-2 mb-4">Every order sent from a shop is logged here so it can be reviewed or removed later. Deleting a record only removes the log entry — it does not change stock.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">${recentOrders || '<div class="text-black/60">No orders sent yet.</div>'}</div>
         </div>`;
+
+      document.querySelectorAll('[data-del-order]').forEach(btn=>{
+        btn.onclick = ()=>{
+          const id = btn.getAttribute('data-del-order');
+          if (confirm('Delete this order record? This only removes the log entry, stock is unaffected.')) {
+            state.orders = state.orders.filter(o=> o.id!==id);
+            persist(); render();
+          }
+        };
+      });
     }
 
     function renderEditPage(){
@@ -375,7 +441,7 @@
           <h2 class="h1 text-xl md:text-2xl">Inventory Editor (Admin)</h2>
           <div class="card p-4 mt-4">
             <h3 class="font-semibold mb-3">Add Item</h3>
-            <div class="grid sm:grid-cols-6 gap-2">
+            <div class="grid grid-cols-1 sm:grid-cols-6 gap-2">
               <input id="addName" class="input" placeholder="Name" />
               <input id="addSku" class="input" placeholder="SKU" />
               <input id="addUnit" class="input" placeholder="Unit (box, sleeve…)" />
@@ -431,7 +497,12 @@
         const it = state.items.find(x=> x.id===btn.getAttribute('data-toggle')); it.is_active = !(it.is_active!==false); persist(); render();
       });
       document.querySelectorAll('[data-del]').forEach(btn=> btn.onclick = ()=> {
-        const id = btn.getAttribute('data-del'); if (confirm('Delete item?')) { state.items = state.items.filter(x=> x.id!==id); persist(); render(); }
+        const id = btn.getAttribute('data-del');
+        if (confirm('Delete item?')) {
+          state.items = state.items.filter(x=> x.id!==id);
+          delete state.cart.q[id]; // an in-progress order must not keep a quantity for an item that no longer exists
+          persist(); render();
+        }
       });
 
       document.getElementById('exportCsv').onclick = ()=>{
@@ -455,12 +526,12 @@
       const shopRows = state.shops.map(s=> `
         <div class="flex items-center gap-2">
           <span class="w-32 md:w-40">${s.name}</span>
-          <input data-wa="${s.id}" class="input flex-1" placeholder="+49176…" value="${s.whatsapp||''}"/>
+          <input data-wa="${s.id}" class="input flex-1 min-w-0" placeholder="+49176…" value="${s.whatsapp||''}"/>
         </div>`).join('');
       document.getElementById('page').innerHTML = `
         <div>
           <h2 class="h1 text-xl md:text-2xl">Settings (Admin)</h2>
-          <div class="grid lg:grid-cols-2 gap-4 md:gap-6 mt-4">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-4">
             <div class="card p-4">
               <h3 class="font-semibold mb-2">Storage Contacts</h3>
               <input id="storageEmail" class="input w-full mb-2" placeholder="Storage email" value="${state.settings.storageEmail||''}"/>
