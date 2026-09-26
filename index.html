@@ -348,14 +348,22 @@
         state.orderNotes = '';
       }
 
-      document.getElementById('sendBtn').onclick = async ()=>{
-        if (!lines.length) { alert('No lines.'); return; }
-        const numberRaw = pickNumber(); const number = String(numberRaw||'').replace(/\D/g,'');
-        if (!number) { alert('Choose a WhatsApp number.'); return; }
+      // Shared by every send channel so an order is decremented, logged, and the cart
+      // cleared exactly once regardless of whether it left via WhatsApp or email - matching
+      // channels here previously skipped this (see commit history), letting the same cart
+      // be sent twice (once untracked) or resent a second time after an "untracked" email.
+      async function finalizeOrder(lines){
         await generatePdf(lines);
         lines.forEach(l=>{ const it = state.items.find(x=>x.id===l.id); if (it) it.stock_qty = Math.max(0, (it.stock_qty||0) - l.qty); });
         recordAndClearOrder(lines);
         persist();
+      }
+
+      document.getElementById('sendBtn').onclick = async ()=>{
+        if (!lines.length) { alert('No lines.'); return; }
+        const numberRaw = pickNumber(); const number = String(numberRaw||'').replace(/\D/g,'');
+        if (!number) { alert('Choose a WhatsApp number.'); return; }
+        await finalizeOrder(lines);
         const waText = encodeURIComponent(`New order from ${shop?.name}:\n` + lines.map(l=> `${l.name} x ${l.qty}`).join('\n'));
         window.open('https://wa.me/'+number+'?text='+waText, '_blank');
         alert('PDF (or text) saved. WhatsApp draft opened.');
@@ -364,11 +372,13 @@
 
       document.getElementById('emailBtn').onclick = async ()=>{
         if (!lines.length) { alert('No lines.'); return; }
-        await generatePdf(lines);
         const subject = encodeURIComponent(`Order — ${shop?.name} → Storage`);
         const body = encodeURIComponent(lines.map(l=> `${l.name} (${l.sku}) x ${l.qty}`).join('\n') + (state.orderNotes? `\n\nNotes: ${state.orderNotes}`:''));
         const mailto = `mailto:${state.settings.storageEmail}?subject=${subject}&body=${body}`;
+        await finalizeOrder(lines);
         window.location.href = mailto;
+        alert('PDF (or text) saved. Email draft opened.');
+        navigate('#/order');
       };
     }
 
