@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#1f160f" />
-  <title>BUNCA Specialty Orders — Static Demo v2 (Mobile)</title>
+  <meta name="theme-color" content="#211610" />
+  <title>BUNCA Specialty — Internal Ordering</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23211610'/%3E%3Cpath d='M12 4.5c-3.4 0-5.7 3-5.7 6.3 0 3.2 2.4 6.7 5.7 6.7s5.7-3.5 5.7-6.7c0-3.3-2.3-6.3-5.7-6.3Z' fill='%23f7f4ef'/%3E%3Cpath d='M12 7.3c-1.4 1.1-1.4 2.9-.7 4.3' stroke='%23211610' stroke-width='1.1' stroke-linecap='round' opacity='.55'/%3E%3C/svg%3E" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -21,34 +22,111 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <style>
-    :root{ --bg:#f6f3ee; --ink:#1f160f; --accent:#8b5a34; }
-    body{ font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+    :root{
+      --bg:#f7f4ef; --surface:#ffffff; --ink:#211610;
+      --ink-70:rgba(33,22,16,.72); --ink-55:rgba(33,22,16,.55); --ink-35:rgba(33,22,16,.35);
+      --accent:#8b5a34; --accent-dark:#6b4226; --accent-soft:#f1e6db;
+      --border:rgba(33,22,16,.10); --border-strong:rgba(33,22,16,.20);
+      --success:#1f7a4d; --success-soft:#e8f5ee;
+      --danger:#b3261e; --danger-soft:#fbeae8;
+      --warn:#9a5b00; --warn-soft:#fbf0dd;
+      --shadow-xs:0 1px 2px rgba(33,22,16,.06);
+      --shadow-sm:0 4px 14px rgba(33,22,16,.08);
+      --shadow-md:0 14px 30px rgba(33,22,16,.10);
+      --shadow-lift:0 20px 44px rgba(33,22,16,.18);
+      --radius-sm:10px; --radius-md:14px; --radius-lg:20px;
+      --ease:cubic-bezier(.2,.8,.2,1); --dur-fast:120ms; --dur:220ms;
+    }
+    *{ box-sizing:border-box; }
+    body{ font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; }
     .h1{ font-family:"Playfair Display",serif; }
-    .card{ border:1px solid rgba(0,0,0,.08); background:#fff; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.04); }
-    .btn{ border-radius:14px; padding:.8rem 1rem; font-weight:600; min-height:44px; }
-    .btn-ghost{ border:1px solid rgba(0,0,0,.12); }
-    .btn-primary{ background:var(--ink); color:#fff; }
-    .btn-accent{ background:var(--accent); color:#fff; }
-    .btn-danger{ border:1px solid rgba(220,38,38,.35); color:#b91c1c; }
-    .input{ border:1px solid rgba(0,0,0,.15); border-radius:12px; padding:.9rem .9rem; min-height:44px; }
-    .pill{ border-radius:999px; border:1px solid rgba(0,0,0,.12); padding:.4rem .8rem; font-size:.85rem; }
-    .tab-active{ background:#fff; color:var(--ink); border-color:rgba(0,0,0,.16); }
-    .tab{ border:1px solid transparent; border-radius:12px; padding:.6rem .9rem; }
+    *:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:6px; }
+
+    .card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-xs); }
+    .card-item{ transition:transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+    .card-item:hover{ transform:translateY(-3px); box-shadow:var(--shadow-sm); border-color:var(--border-strong); }
+
+    .btn{ display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border-radius:var(--radius-md); padding:.8rem 1.1rem; font-weight:600; min-height:44px; border:1px solid transparent; cursor:pointer; user-select:none; box-shadow:var(--shadow-xs); transition:transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease); }
+    .btn:hover{ transform:translateY(-1px); box-shadow:var(--shadow-sm); }
+    .btn:active{ transform:translateY(0) scale(.97); box-shadow:var(--shadow-xs); }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-sm{ padding:.5rem .85rem; min-height:36px; font-size:.85rem; border-radius:var(--radius-sm); }
+    .btn-ghost{ background:var(--surface); color:var(--ink); border-color:var(--border-strong); }
+    .btn-ghost:hover{ background:var(--accent-soft); border-color:var(--accent); }
+    .btn-primary{ background:var(--ink); color:#fff; border-color:var(--ink); }
+    .btn-primary:hover{ background:#0f0906; }
+    .btn-accent{ background:var(--accent); color:#fff; border-color:var(--accent); }
+    .btn-accent:hover{ background:var(--accent-dark); }
+    .btn-danger{ background:var(--surface); color:var(--danger); border-color:rgba(179,38,30,.35); }
+    .btn-danger:hover{ background:var(--danger-soft); border-color:var(--danger); }
+    .btn-toggle-on{ background:var(--accent-soft); border-color:var(--accent); color:var(--accent-dark); }
+    .btn svg{ width:16px; height:16px; flex:none; }
+
+    .input{ border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:.85rem .95rem; min-height:44px; background:var(--surface); color:var(--ink); width:100%; transition:border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease); }
+    .input:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+    .input::placeholder{ color:var(--ink-35); }
+    input[type="radio"]{ width:18px; height:18px; accent-color:var(--accent); cursor:pointer; }
+
+    .pill{ display:inline-flex; align-items:center; gap:.35rem; border-radius:999px; border:1px solid var(--border-strong); padding:.45rem .9rem; font-size:.85rem; background:var(--surface); color:var(--ink-70); cursor:pointer; transition:background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease); }
+    .pill:hover{ border-color:var(--accent); color:var(--ink); }
+    .pill.is-active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+
+    .radio-row{ display:flex; align-items:center; gap:.6rem; padding:.5rem .25rem; border-radius:var(--radius-sm); transition:background var(--dur-fast) var(--ease); cursor:pointer; }
+    .radio-row:hover{ background:var(--accent-soft); }
+
+    .tab{ position:relative; border-radius:var(--radius-sm); padding:.55rem .95rem; color:var(--ink-70); font-weight:500; transition:color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease); }
+    .tab:hover{ background:var(--accent-soft); color:var(--ink); }
+    .tab-active{ background:var(--ink); color:#fff !important; }
+
+    .nav-icon{ position:relative; width:22px; height:22px; display:inline-flex; }
+    .nav-icon svg{ width:100%; height:100%; }
+    .nav-lock{ position:absolute; right:-6px; bottom:-4px; width:13px; height:13px; background:var(--surface); border-radius:50%; display:none; align-items:center; justify-content:center; box-shadow:var(--shadow-xs); color:var(--ink-55); }
+    .nav-lock svg{ width:8px; height:8px; }
+
+    .stock-dot{ display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--danger); margin-right:5px; }
+
+    .hero{ position:relative; overflow:hidden; background:radial-gradient(130% 160% at 12% 15%, #3c2717 0%, #241811 55%, #150e09 100%); color:#fff; }
+    .hero:before{ content:''; position:absolute; inset:0; background-image:radial-gradient(circle at 85% 8%, rgba(255,255,255,.10), transparent 40%), radial-gradient(circle at 6% 92%, rgba(255,255,255,.06), transparent 45%); pointer-events:none; }
+    .hero-stat{ display:inline-flex; align-items:center; gap:.5rem; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.16); border-radius:999px; padding:.4rem .85rem; font-size:.8rem; backdrop-filter:blur(4px); }
+    .hero-stat .dot{ width:6px; height:6px; border-radius:50%; background:#f5b942; }
+
     .grain:before{ content:''; position:fixed; inset:0; pointer-events:none; background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" opacity="0.06"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>'); mix-blend-mode:multiply; z-index:0; }
     @supports (padding: max(0px)) { .safe-bottom{ padding-bottom:max(env(safe-area-inset-bottom),12px); } }
+
+    #toastRoot{ position:fixed; z-index:60; left:50%; transform:translateX(-50%); bottom:calc(84px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; gap:.5rem; width:min(380px, calc(100vw - 24px)); pointer-events:none; }
+    @media (min-width:1024px){ #toastRoot{ left:auto; right:24px; transform:none; bottom:24px; } }
+    .toast{ pointer-events:auto; cursor:pointer; background:var(--ink); color:#fff; border-radius:var(--radius-md); padding:.85rem 1rem; box-shadow:var(--shadow-lift); font-size:.9rem; animation:toast-in var(--dur) var(--ease); }
+    .toast.success{ background:var(--success); }
+    .toast.warn{ background:var(--warn); }
+    .toast.danger{ background:var(--danger); }
+    .toast.leaving{ animation:toast-out var(--dur-fast) var(--ease) forwards; }
+    @keyframes toast-in{ from{ opacity:0; transform:translateY(10px) scale(.97);} to{ opacity:1; transform:none; } }
+    @keyframes toast-out{ to{ opacity:0; transform:translateY(6px) scale(.97);} }
+
+    #modalRoot{ position:fixed; inset:0; z-index:70; display:none; align-items:center; justify-content:center; padding:20px; }
+    #modalRoot.open{ display:flex; }
+    .modal-backdrop{ position:absolute; inset:0; background:rgba(21,14,9,.5); backdrop-filter:blur(2px); animation:fade-in var(--dur) var(--ease); }
+    .modal-panel{ position:relative; background:var(--surface); border-radius:var(--radius-lg); box-shadow:var(--shadow-lift); padding:1.5rem; width:100%; max-width:400px; animation:modal-in var(--dur) var(--ease); }
+    @keyframes fade-in{ from{ opacity:0; } to{ opacity:1; } }
+    @keyframes modal-in{ from{ opacity:0; transform:translateY(14px) scale(.97);} to{ opacity:1; transform:none; } }
   </style>
 </head>
 <body class="grain min-h-screen">
   <header class="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-black/10">
     <div class="max-w-7xl mx-auto px-3 md:px-4 py-3 flex flex-wrap items-center justify-between gap-y-2">
-      <a href="#/order" class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-coffee-600 text-white grid place-items-center text-lg shadow-soft">🫘</div>
+      <a href="#/order" class="flex items-center gap-3 group">
+        <div class="w-9 h-9 rounded-xl bg-[var(--ink)] text-white grid place-items-center shadow-soft transition-transform duration-200 group-hover:scale-105 p-2">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="w-full h-full">
+            <path d="M12 3c-4.5 0-7.5 4-7.5 8.2 0 4.2 3.2 8.8 7.5 8.8s7.5-4.6 7.5-8.8C19.5 7 16.5 3 12 3Z" fill="currentColor"/>
+            <path d="M12 6.7c-1.9 1.5-1.9 3.8-.9 5.7" stroke="#f7f4ef" stroke-width="1.3" stroke-linecap="round" opacity=".6"/>
+          </svg>
+        </div>
         <div>
           <div class="h1 text-xl leading-tight">BUNCA Specialty</div>
           <div class="text-xs text-black/60 -mt-1">Internal Orders</div>
         </div>
       </a>
-      <nav class="hidden lg:flex items-center gap-2">
+      <nav class="hidden lg:flex items-center gap-1">
         <a data-tab="#/order" class="tab">Order</a>
         <a data-tab="#/review" class="tab">Confirm</a>
         <a data-tab="#/inventory" class="tab admin-only">Inventory</a>
@@ -57,18 +135,18 @@
       </nav>
       <div class="flex items-center gap-2 flex-wrap justify-end">
         <div id="shopSwitch" class="flex flex-wrap items-center gap-1 rounded-2xl border border-black/10 p-1"></div>
-        <button id="adminToggle" class="btn btn-ghost">Admin</button>
+        <button id="adminToggle" class="btn btn-ghost btn-sm"></button>
       </div>
     </div>
   </header>
 
-  <section class="relative">
-    <img src="https://images.unsplash.com/photo-1498804103079-a6351b050096?q=80&w=1200&auto=format&fit=crop" class="w-full h-[22vh] md:h-[28vh] object-cover" alt="coffee hero">
-    <div class="absolute inset-0 bg-gradient-to-r from-black/30 to-black/0"></div>
-    <div class="absolute inset-0 max-w-7xl mx-auto px-4 flex items-end pb-4 md:pb-6">
-      <div class="text-white drop-shadow">
-        <h1 class="h1 text-2xl md:text-4xl">Fast, tidy, specialty-grade ordering.</h1>
-        <p class="text-white/85 text-sm md:text-base">Three shops. One storage. Crystal clear pick lists.</p>
+  <section class="hero">
+    <div class="relative max-w-7xl mx-auto px-4 py-10 md:py-14">
+      <h1 class="h1 text-2xl md:text-4xl">Fast, tidy, specialty-grade ordering.</h1>
+      <p class="text-white/80 text-sm md:text-base mt-2 max-w-lg">Three shops. One storage. Crystal clear pick lists.</p>
+      <div class="flex flex-wrap gap-2 mt-5">
+        <span class="hero-stat"><span class="dot"></span><span id="heroShopCount">—</span></span>
+        <span class="hero-stat"><span class="dot"></span><span id="heroLowStock">—</span></span>
       </div>
     </div>
   </section>
@@ -77,25 +155,60 @@
 
   <nav class="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-white/95 backdrop-blur border-t border-black/10 safe-bottom">
     <div class="max-w-7xl mx-auto px-3 grid grid-cols-5 gap-1 text-xs text-center">
-      <a href="#/order" class="tab flex flex-col items-center py-2"><span>🛒</span><span>Order</span></a>
-      <a href="#/review" class="tab flex flex-col items-center py-2"><span>✅</span><span>Confirm</span></a>
-      <a href="#/inventory" class="tab admin-only flex flex-col items-center py-2 opacity-60"><span>📦</span><span>Inventory</span></a>
-      <a href="#/edit" class="tab admin-only flex flex-col items-center py-2 opacity-60"><span>✏️</span><span>Editor</span></a>
-      <a href="#/settings" class="tab admin-only flex flex-col items-center py-2 opacity-60"><span>⚙️</span><span>Settings</span></a>
+      <a href="#/order" class="tab flex flex-col items-center gap-1 py-2">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="10" cy="20" r="1.4" fill="currentColor" stroke="none"/><circle cx="17" cy="20" r="1.4" fill="currentColor" stroke="none"/></svg></span>
+        <span>Order</span>
+      </a>
+      <a href="#/review" class="tab flex flex-col items-center gap-1 py-2">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+        <span>Confirm</span>
+      </a>
+      <a href="#/inventory" class="tab admin-only flex flex-col items-center gap-1 py-2">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8 12 4l8.5 4-8.5 4-8.5-4Z"/><path d="M3.5 8v8L12 20l8.5-4V8"/><path d="M12 12v8"/></svg><span class="nav-lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></span>
+        <span>Inventory</span>
+      </a>
+      <a href="#/edit" class="tab admin-only flex flex-col items-center gap-1 py-2">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l.9-4L16 4.9a1.6 1.6 0 0 1 2.3 0l.8.8a1.6 1.6 0 0 1 0 2.3L8 19.1 4 20Z"/></svg><span class="nav-lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></span>
+        <span>Editor</span>
+      </a>
+      <a href="#/settings" class="tab admin-only flex flex-col items-center gap-1 py-2">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H4a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H10a1.7 1.7 0 0 0 1-1.5V4a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V10a1.7 1.7 0 0 0 1.5 1H20a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg><span class="nav-lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></span>
+        <span>Settings</span>
+      </a>
     </div>
   </nav>
 
+  <div id="toastRoot" aria-live="polite"></div>
+  <div id="modalRoot"></div>
+
   <footer class="border-t border-black/10 bg-white">
-    <div class="max-w-7xl mx-auto px-3 md:px-4 py-6 text-sm text-black/70 flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-3 md:px-4 py-6 text-sm text-black/70 flex flex-wrap items-center justify-between gap-3">
       <span>© <span id="year"></span> BUNCA Coffee</span>
-      <div class="flex items-center gap-3">
-        <a class="hover:text-black" href="mailto:mouazalmjarkesh@gmail.com">Owner Email</a>
-        <a class="hover:text-black" href="https://wa.me/017632100978" target="_blank">Owner WhatsApp</a>
+      <div class="flex items-center gap-4">
+        <a class="flex items-center gap-1.5 hover:text-black transition-colors" href="mailto:mouazalmjarkesh@gmail.com">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+          <span>Owner Email</span>
+        </a>
+        <a class="flex items-center gap-1.5 hover:text-black transition-colors" href="https://wa.me/017632100978" target="_blank">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a7.5 7.5 0 0 1-11.4 6.4L4 19l1.2-4.3A7.5 7.5 0 1 1 21 11.5Z"/></svg>
+          <span>Owner WhatsApp</span>
+        </a>
       </div>
     </div>
   </footer>
 
   <script>
+    const ICONS = {
+      trash: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg>`,
+      lock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`,
+      plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
+      x: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>`,
+      check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>`,
+      send: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg>`,
+      mail: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>`,
+      back: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg>`,
+    };
+
     const LS = { items:'bunca_v2m_items', shops:'bunca_v2m_shops', settings:'bunca_v2m_settings', admin:'bunca_v2m_admin', cart:'bunca_v2m_cart', orders:'bunca_v2m_orders' };
     const DEFAULT_SHOPS = [
       { id:'city',  name:'City',         whatsapp:'' },
@@ -126,6 +239,88 @@
     };
     function persist(){ save(LS.items, state.items); save(LS.shops, state.shops); save(LS.settings, state.settings); save(LS.admin, state.adminAuthed); save(LS.cart, state.cart); save(LS.orders, state.orders); }
 
+    // --- Toasts: replace jarring native alert() with a non-blocking, dismissible notice ---
+    function toast(message, type){
+      const root = document.getElementById('toastRoot');
+      const el = document.createElement('div');
+      el.className = 'toast' + (type ? ' '+type : '');
+      el.textContent = message;
+      el.onclick = ()=> dismissToast(el);
+      root.appendChild(el);
+      setTimeout(()=> dismissToast(el), 3600);
+    }
+    function dismissToast(el){
+      if (!el.isConnected || el.classList.contains('leaving')) return;
+      el.classList.add('leaving');
+      setTimeout(()=> el.remove(), 160);
+    }
+
+    // --- Modal: replaces native prompt()/confirm() so admin sign-in and destructive actions
+    // get a real, on-brand dialog instead of a browser-chrome popup. ---
+    function escHandler(e){ if (e.key==='Escape') closeModal(); }
+    function openModal(contentHtml, onMount){
+      const root = document.getElementById('modalRoot');
+      root.innerHTML = `<div class="modal-backdrop" data-close></div><div class="modal-panel" role="dialog" aria-modal="true">${contentHtml}</div>`;
+      root.classList.add('open');
+      root.querySelector('[data-close]').onclick = closeModal;
+      document.addEventListener('keydown', escHandler);
+      if (onMount) onMount(root);
+    }
+    function closeModal(){
+      const root = document.getElementById('modalRoot');
+      root.classList.remove('open');
+      root.innerHTML = '';
+      document.removeEventListener('keydown', escHandler);
+    }
+    function confirmModal(message, opts){
+      opts = opts || {};
+      return new Promise(resolve=>{
+        let settled = false;
+        const finish = (val)=>{ if (settled) return; settled = true; closeModal(); resolve(val); };
+        openModal(`
+          <h3 class="h1 text-lg mb-2">${opts.title||'Please confirm'}</h3>
+          <p class="text-sm text-black/70 mb-5">${message}</p>
+          <div class="flex items-center gap-2 justify-end">
+            <button class="btn btn-ghost" data-cancel>Cancel</button>
+            <button class="btn ${opts.danger?'btn-danger':'btn-primary'}" data-ok>${opts.okText||'Confirm'}</button>
+          </div>`, (root)=>{
+            root.querySelector('[data-cancel]').onclick = ()=> finish(false);
+            root.querySelector('[data-ok]').onclick = ()=> finish(true);
+            root.querySelector('[data-close]') && (root.querySelector('[data-close]').onclick = ()=>{ closeModal(); resolve(false); });
+          });
+      });
+    }
+    function openAdminLoginModal(){
+      openModal(`
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] grid place-items-center shrink-0">${ICONS.lock}</div>
+          <div>
+            <h3 class="h1 text-lg">Admin sign-in</h3>
+            <p class="text-xs text-black/60">Enter the admin password to continue.</p>
+          </div>
+        </div>
+        <input id="adminPw" type="password" class="input" placeholder="Password" autocomplete="current-password" />
+        <p id="adminPwError" class="text-xs mt-2 hidden" style="color:var(--danger)">Incorrect password.</p>
+        <div class="flex items-center gap-2 justify-end mt-4">
+          <button class="btn btn-ghost" data-cancel>Cancel</button>
+          <button class="btn btn-primary" data-ok>Unlock</button>
+        </div>`, (root)=>{
+          const input = root.querySelector('#adminPw');
+          const err = root.querySelector('#adminPwError');
+          input.focus();
+          function attempt(){
+            if (input.value === 'bunca123'){
+              state.adminAuthed = true; persist(); closeModal(); render(); toast('Admin mode enabled.', 'success');
+            } else {
+              err.classList.remove('hidden'); input.value=''; input.focus();
+            }
+          }
+          root.querySelector('[data-ok]').onclick = attempt;
+          root.querySelector('[data-cancel]').onclick = closeModal;
+          input.addEventListener('keydown', e=>{ if (e.key==='Enter') attempt(); });
+        });
+    }
+
     const routes = {
       '/order': renderOrderPage,
       '/review': renderReviewPage,
@@ -142,17 +337,19 @@
         const target = a.getAttribute('href') || a.getAttribute('data-tab');
         const same = (target === location.hash);
         if (same) a.classList.add('tab-active'); else a.classList.remove('tab-active');
-        if (a.classList.contains('admin-only') && !state.adminAuthed) a.classList.add('opacity-60'); else a.classList.remove('opacity-60');
+        if (a.classList.contains('admin-only')) a.classList.toggle('opacity-60', !state.adminAuthed);
+        const lockEl = a.querySelector('.nav-lock');
+        if (lockEl) lockEl.style.display = state.adminAuthed ? 'none' : 'flex';
       });
     }
     function renderShopSwitch(){
-      // Do not force display via inline style here - it would override the "hidden sm:flex"
-      // classes that are supposed to hide this switcher on narrow phone screens, blowing out
-      // the header layout. Let the existing Tailwind classes control visibility per breakpoint.
+      // Do not force display via inline style here - it would override the responsive
+      // classes that control this switcher's visibility per breakpoint, blowing out
+      // the header layout. Let the existing Tailwind classes control visibility.
       const box = document.getElementById('shopSwitch'); box.innerHTML='';
       state.shops.forEach(s=>{
         const b = document.createElement('button');
-        b.className = 'pill ' + (state.cart.shopId===s.id? 'bg-white':'bg-transparent');
+        b.className = 'pill ' + (state.cart.shopId===s.id? 'is-active':'');
         b.textContent = s.name;
         b.onclick = ()=>{ state.cart.shopId = s.id; persist(); render(); };
         box.appendChild(b);
@@ -160,11 +357,21 @@
     }
     function adminToggle(){
       const btn = document.getElementById('adminToggle');
-      btn.textContent = state.adminAuthed ? 'Admin: On' : 'Admin';
+      btn.innerHTML = state.adminAuthed ? `${ICONS.lock}<span>Admin</span>` : `<span>Admin</span>`;
+      btn.classList.toggle('btn-toggle-on', state.adminAuthed);
       btn.onclick = ()=>{
-        if (state.adminAuthed){ state.adminAuthed = false; persist(); render(); return; }
-        const pw = prompt('Admin password (demo)'); if (pw==='bunca123'){ state.adminAuthed = true; persist(); render(); } else if (pw) alert('Wrong password');
+        if (state.adminAuthed){ state.adminAuthed = false; persist(); render(); toast('Admin mode disabled.'); return; }
+        openAdminLoginModal();
       };
+    }
+    function updateHeroStats(){
+      const shopEl = document.getElementById('heroShopCount');
+      const lowEl = document.getElementById('heroLowStock');
+      if (shopEl) shopEl.textContent = `${state.shops.length} shop${state.shops.length===1?'':'s'} online`;
+      if (lowEl){
+        const lowCount = state.items.filter(i=> i.is_active!==false && (i.stock_qty||0) < (i.min_stock||0)).length;
+        lowEl.textContent = lowCount ? `${lowCount} item${lowCount===1?'':'s'} low on stock` : 'Stock levels healthy';
+      }
     }
 
     function renderOrderPage(){
@@ -183,12 +390,12 @@
           <div class="mt-4">
             <input id="search" class="input w-full" inputmode="search" placeholder="Search (name or SKU)" value="${state.filters.search}"/>
             <div class="flex flex-wrap gap-2 mt-3">
-              ${categories.map(c=>`<button data-cat="${c}" class="pill ${c===state.filters.cat?'bg-white':''}">${c}</button>`).join('')}
+              ${categories.map(c=>`<button data-cat="${c}" class="pill ${c===state.filters.cat?'is-active':''}">${c}</button>`).join('')}
             </div>
           </div>
-          <div class="mt-4 text-sm">Lines selected: <b>${lines}</b></div>
-          <button id="reviewBtn" class="btn btn-primary w-full mt-3">Review Order</button>
-          ${lines>0 ? '<button id="clearOrderBtn" class="btn btn-ghost w-full mt-2">Clear order</button>' : ''}
+          <div class="mt-4 text-sm">Lines selected: <b id="linesCount">${lines}</b></div>
+          <button id="reviewBtn" class="btn btn-primary w-full mt-3">${ICONS.check}<span>Review Order</span></button>
+          <button id="clearOrderBtn" class="btn btn-ghost w-full mt-2 ${lines>0?'':'hidden'}">${ICONS.x}<span>Clear order</span></button>
           <p class="text-xs text-black/60 mt-2">You’ll confirm recipients and send the PDF on the next page.</p>
         </div>`;
 
@@ -196,18 +403,18 @@
         const low = (it.stock_qty||0) < (it.min_stock||0);
         const val = state.cart.q[it.id] || '';
         return `
-          <div class="card p-4">
+          <div class="card card-item p-4">
             <div class="flex items-center justify-between gap-3">
               <div>
                 <div class="font-semibold">${it.name}</div>
-                <div class="text-xs text-black/60">${it.sku} • /${it.unit} • <span class="${low?'text-rose-600 font-semibold':''}">Stock: ${it.stock_qty||0}</span> • Min: ${it.min_stock||0}</div>
+                <div class="text-xs text-black/60">${it.sku} • /${it.unit} • <span class="${low?'text-rose-600 font-semibold':''}">${low?'<span class="stock-dot"></span>':''}Stock: ${it.stock_qty||0}</span> • Min: ${it.min_stock||0}</div>
               </div>
               <span class="pill">${it.category||'Other'}</span>
             </div>
             <div class="mt-3 grid grid-cols-[1fr_auto_auto] gap-2 items-center">
               <input data-qty="${it.id}" class="input w-full" placeholder="0" inputmode="numeric" pattern="[0-9]*" value="${val}"/>
-              <button data-plus="${it.id}" class="btn btn-ghost">+1</button>
-              <button data-clear="${it.id}" class="btn btn-ghost">Clear</button>
+              <button data-plus="${it.id}" class="btn btn-ghost btn-sm">+1</button>
+              <button data-clear="${it.id}" class="btn btn-ghost btn-sm">Clear</button>
             </div>
           </div>`;
       }).join('');
@@ -222,13 +429,23 @@
       document.querySelectorAll('[data-cat]').forEach(b=> b.onclick = ()=>{ state.filters.cat = b.getAttribute('data-cat'); render(); });
       document.getElementById('reviewBtn').onclick = ()=>{
         const any = Object.values(state.cart.q).some(v=> Number(v||0) > 0);
-        if (!any) { alert('Please add at least one item.'); return; }
+        if (!any) { toast('Please add at least one item.', 'warn'); return; }
         navigate('#/review');
       };
-      const clearOrderBtn = document.getElementById('clearOrderBtn');
-      if (clearOrderBtn) clearOrderBtn.onclick = ()=>{
-        if (confirm('Clear all quantities for this order?')) { state.cart.q = {}; persist(); render(); }
+      document.getElementById('clearOrderBtn').onclick = async ()=>{
+        const ok = await confirmModal('This clears every quantity you’ve entered for this order.', { title:'Clear order?', okText:'Clear', danger:true });
+        if (ok) { state.cart.q = {}; persist(); render(); toast('Order cleared.'); }
       };
+      // Refresh only the summary count + Clear-order visibility on blur, instead of a full
+      // render(): rebuilding the whole #page mid-gesture could swap out whatever the user's
+      // pointer was already headed for (e.g. tapping "Review Order" right after typing a
+      // quantity), silently eating that click since the browser's click lands on a
+      // freshly-replaced node instead of the one the gesture started on.
+      function updateOrderSidebarSummary(){
+        const n = Object.values(state.cart.q).reduce((acc,v)=> acc + (Number(v||0)>0?1:0), 0);
+        const countEl = document.getElementById('linesCount'); if (countEl) countEl.textContent = n;
+        const clearBtn = document.getElementById('clearOrderBtn'); if (clearBtn) clearBtn.classList.toggle('hidden', n===0);
+      }
       document.querySelectorAll('[data-qty]').forEach(inp=>{
         const id = inp.getAttribute('data-qty');
         inp.oninput = (e)=>{
@@ -238,7 +455,7 @@
           state.cart.q[id] = num ? String(num) : '';
           persist();
         };
-        inp.onblur = ()=> render();
+        inp.onblur = ()=> updateOrderSidebarSummary();
       });
       document.querySelectorAll('[data-plus]').forEach(btn=>{
         const id = btn.getAttribute('data-plus');
@@ -267,7 +484,7 @@
           <div class="card p-6 max-w-md">
             <h2 class="h1 text-2xl">Nothing to confirm</h2>
             <p class="text-black/70 mt-2">Your order is empty. Go back and add some quantities first.</p>
-            <button id="backBtnEmpty" class="btn btn-primary mt-4">Back to Order</button>
+            <button id="backBtnEmpty" class="btn btn-primary mt-4">${ICONS.back}<span>Back to Order</span></button>
           </div>`;
         document.getElementById('backBtnEmpty').onclick = ()=> navigate('#/order');
         return;
@@ -290,17 +507,17 @@
             <h3 class="font-semibold">Confirm & Send</h3>
             <p class="text-sm text-black/60">Choose the WhatsApp number that should receive the PDF. You can also open an email draft.</p>
 
-            <div class="mt-3 space-y-2">
-              <label class="flex items-center gap-2"><input type="radio" name="wa" value="storage" checked> <span>Storage phone: <b>${state.settings.storagePhone}</b></span></label>
-              <label class="flex items-center gap-2"><input type="radio" name="wa" value="shop"> <span>${shop?.name} WhatsApp: <b>${(state.shops.find(s=>s.id===state.cart.shopId)?.whatsapp || '—')}</b></span></label>
-              <label class="flex items-center gap-2"><input type="radio" name="wa" value="custom"> <span>Custom number</span></label>
+            <div class="mt-3 space-y-1">
+              <label class="radio-row"><input type="radio" name="wa" value="storage" checked> <span>Storage phone: <b>${state.settings.storagePhone}</b></span></label>
+              <label class="radio-row"><input type="radio" name="wa" value="shop"> <span>${shop?.name} WhatsApp: <b>${(state.shops.find(s=>s.id===state.cart.shopId)?.whatsapp || '—')}</b></span></label>
+              <label class="radio-row"><input type="radio" name="wa" value="custom"> <span>Custom number</span></label>
               <input id="waCustom" class="input w-full" placeholder="+49176…" inputmode="tel" />
             </div>
 
-            <div class="mt-4 flex items-center gap-2">
-              <button id="backBtn" class="btn btn-ghost">Back</button>
-              <button id="sendBtn" class="btn btn-accent">Generate PDF & Send</button>
-              <button id="emailBtn" class="btn btn-ghost">Email Draft</button>
+            <div class="mt-4 flex items-center gap-2 flex-wrap">
+              <button id="backBtn" class="btn btn-ghost">${ICONS.back}<span>Back</span></button>
+              <button id="sendBtn" class="btn btn-accent">${ICONS.send}<span>Generate PDF & Send</span></button>
+              <button id="emailBtn" class="btn btn-ghost">${ICONS.mail}<span>Email Draft</span></button>
             </div>
 
             <p class="mt-3 text-xs text-black/60">Lines: <b>${totalLines}</b>. Stock will be decremented in this demo after sending, and the order form will clear so it can't be sent twice by accident.</p>
@@ -360,24 +577,24 @@
       }
 
       document.getElementById('sendBtn').onclick = async ()=>{
-        if (!lines.length) { alert('No lines.'); return; }
+        if (!lines.length) { toast('No lines to send.', 'warn'); return; }
         const numberRaw = pickNumber(); const number = String(numberRaw||'').replace(/\D/g,'');
-        if (!number) { alert('Choose a WhatsApp number.'); return; }
+        if (!number) { toast('Choose a WhatsApp number first.', 'warn'); return; }
         await finalizeOrder(lines);
         const waText = encodeURIComponent(`New order from ${shop?.name}:\n` + lines.map(l=> `${l.name} x ${l.qty}`).join('\n'));
         window.open('https://wa.me/'+number+'?text='+waText, '_blank');
-        alert('PDF (or text) saved. WhatsApp draft opened.');
+        toast('Order sent — PDF saved and WhatsApp draft opened.', 'success');
         navigate('#/order');
       };
 
       document.getElementById('emailBtn').onclick = async ()=>{
-        if (!lines.length) { alert('No lines.'); return; }
+        if (!lines.length) { toast('No lines to send.', 'warn'); return; }
         const subject = encodeURIComponent(`Order — ${shop?.name} → Storage`);
         const body = encodeURIComponent(lines.map(l=> `${l.name} (${l.sku}) x ${l.qty}`).join('\n') + (state.orderNotes? `\n\nNotes: ${state.orderNotes}`:''));
         const mailto = `mailto:${state.settings.storageEmail}?subject=${subject}&body=${body}`;
         await finalizeOrder(lines);
         window.location.href = mailto;
-        alert('PDF (or text) saved. Email draft opened.');
+        toast('Order sent — PDF saved and email draft opened.', 'success');
         navigate('#/order');
       };
     }
@@ -392,7 +609,7 @@
               <div class="text-xs text-black/60">${it.sku} • /${it.unit} ${it.category? '• '+it.category:''}</div>
             </div>
             <div class="text-right">
-              <div class="${low?'text-rose-600 font-semibold':''}">Stock: ${it.stock_qty||0}</div>
+              <div class="${low?'text-rose-600 font-semibold':''}">${low?'<span class="stock-dot"></span>':''}Stock: ${it.stock_qty||0}</div>
               <div class="text-xs text-black/60">Min: ${it.min_stock||0}</div>
             </div>
           </div>
@@ -408,7 +625,7 @@
               <div class="text-xs text-black/60 mt-1 break-words">${lineText}</div>
               ${o.notes ? `<div class="text-xs text-black/50 mt-1">Notes: ${o.notes}</div>` : ''}
             </div>
-            <button data-del-order="${o.id}" class="btn btn-ghost btn-danger shrink-0">Delete</button>
+            <button data-del-order="${o.id}" class="btn btn-ghost btn-danger btn-sm shrink-0">${ICONS.trash}<span>Delete</span></button>
           </div>
         </div>`;
       }).join('');
@@ -424,12 +641,10 @@
         </div>`;
 
       document.querySelectorAll('[data-del-order]').forEach(btn=>{
-        btn.onclick = ()=>{
+        btn.onclick = async ()=>{
           const id = btn.getAttribute('data-del-order');
-          if (confirm('Delete this order record? This only removes the log entry, stock is unaffected.')) {
-            state.orders = state.orders.filter(o=> o.id!==id);
-            persist(); render();
-          }
+          const ok = await confirmModal('This only removes the log entry — stock is unaffected.', { title:'Delete this order record?', okText:'Delete', danger:true });
+          if (ok) { state.orders = state.orders.filter(o=> o.id!==id); persist(); render(); toast('Order record deleted.'); }
         };
       });
     }
@@ -442,8 +657,8 @@
           <td class="py-2"><input data-stock="${it.id}" class="input w-24" inputmode="numeric" value="${it.stock_qty||0}"/></td>
           <td class="py-2"><input data-min="${it.id}" class="input w-24" inputmode="numeric" value="${it.min_stock||0}"/></td>
           <td class="py-2"><input data-cat="${it.id}" class="input w-28" value="${it.category||''}"/></td>
-          <td class="py-2"><button data-toggle="${it.id}" class="btn btn-ghost">${it.is_active!==false?'Disable':'Enable'}</button></td>
-          <td class="py-2"><button data-del="${it.id}" class="btn btn-ghost">Delete</button></td>
+          <td class="py-2"><button data-toggle="${it.id}" class="btn btn-ghost btn-sm">${it.is_active!==false?'Disable':'Enable'}</button></td>
+          <td class="py-2"><button data-del="${it.id}" class="btn btn-ghost btn-danger btn-sm">${ICONS.trash}<span>Delete</span></button></td>
         </tr>`;
       }).join('');
       document.getElementById('page').innerHTML = `
@@ -459,7 +674,7 @@
               <input id="addMin" class="input" placeholder="Min stock" inputmode="numeric" />
               <input id="addCat" class="input" placeholder="Category" />
             </div>
-            <button id="addBtn" class="btn btn-primary mt-3">Add</button>
+            <button id="addBtn" class="btn btn-primary mt-3">${ICONS.plus}<span>Add item</span></button>
           </div>
 
           <div class="card p-4 mt-4 overflow-auto">
@@ -489,9 +704,9 @@
         const stock = Number((document.getElementById('addStock').value||'').replace(/[^0-9]/g,''))||0;
         const min   = Number((document.getElementById('addMin').value||'').replace(/[^0-9]/g,''))||0;
         const cat   = document.getElementById('addCat').value.trim() || null;
-        if (!name || !sku || !unit) { alert('Fill name, SKU, unit'); return; }
+        if (!name || !sku || !unit) { toast('Fill in name, SKU, and unit first.', 'warn'); return; }
         state.items.push({ id:uid(), name, sku, unit, stock_qty:stock, min_stock:min, category:cat, is_active:true });
-        persist(); render();
+        persist(); render(); toast('Item added.', 'success');
       };
 
       document.querySelectorAll('[data-stock]').forEach(inp=> inp.oninput = e => {
@@ -506,12 +721,13 @@
       document.querySelectorAll('[data-toggle]').forEach(btn=> btn.onclick = ()=> {
         const it = state.items.find(x=> x.id===btn.getAttribute('data-toggle')); it.is_active = !(it.is_active!==false); persist(); render();
       });
-      document.querySelectorAll('[data-del]').forEach(btn=> btn.onclick = ()=> {
+      document.querySelectorAll('[data-del]').forEach(btn=> btn.onclick = async ()=> {
         const id = btn.getAttribute('data-del');
-        if (confirm('Delete item?')) {
+        const ok = await confirmModal('This permanently removes the item from inventory and from any in-progress order.', { title:'Delete item?', okText:'Delete', danger:true });
+        if (ok) {
           state.items = state.items.filter(x=> x.id!==id);
           delete state.cart.q[id]; // an in-progress order must not keep a quantity for an item that no longer exists
-          persist(); render();
+          persist(); render(); toast('Item deleted.');
         }
       });
 
@@ -522,13 +738,13 @@
         const blob = new Blob([csv], { type:'text/csv' }); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='items.csv'; a.click(); URL.revokeObjectURL(a.href);
       };
       document.getElementById('importCsv').onclick = ()=>{
-        const txt = document.getElementById('csvText').value; if(!txt.trim()){ alert('Paste CSV'); return; }
+        const txt = document.getElementById('csvText').value; if(!txt.trim()){ toast('Paste CSV text first.', 'warn'); return; }
         const lines = txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean); let start=0; if(lines[0].toLowerCase().startsWith('name,')) start=1;
         for(let i=start;i<lines.length;i++){ const p=lines[i].split(','); if(p.length<3) continue; const [name,sku,unit,stock='0',min='0',cat=''] = p;
           const ex = state.items.find(x=> x.sku===sku.trim()); const rec = { id: ex? ex.id: uid(), name:name.trim(), sku:sku.trim(), unit:unit.trim(), stock_qty:Number(stock)||0, min_stock:Number(min)||0, category: (cat||'').trim() || null, is_active:true };
           if (ex) Object.assign(ex, rec); else state.items.push(rec);
         }
-        persist(); render(); alert('Import complete.');
+        persist(); render(); toast('CSV import complete.', 'success');
       };
     }
 
@@ -562,15 +778,18 @@
 
     function renderAdminLock(){
       document.getElementById('page').innerHTML = `
-        <div class="card p-6 max-w-md">
+        <div class="card p-8 max-w-md mx-auto text-center">
+          <div class="w-12 h-12 rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] grid place-items-center mx-auto mb-4">${ICONS.lock}</div>
           <h2 class="h1 text-2xl">Admin only</h2>
-          <p class="text-black/70 mt-2">This page is for admins. Tap <b>Admin</b> in the header and enter <b>bunca123</b> to unlock.</p>
+          <p class="text-black/70 mt-2">This area is for storage admins. Sign in to continue.</p>
+          <button id="adminLockSignIn" class="btn btn-primary mt-5">${ICONS.lock}<span>Sign in</span></button>
         </div>`;
+      document.getElementById('adminLockSignIn').onclick = openAdminLoginModal;
     }
 
     function render(){
       document.getElementById('year').textContent = new Date().getFullYear();
-      setTabsActive(); renderShopSwitch(); adminToggle();
+      setTabsActive(); renderShopSwitch(); adminToggle(); updateHeroStats();
       const route = currentRoute(); const fn = routes[route] || renderOrderPage; fn();
     }
     window.addEventListener('hashchange', ()=>{ setTabsActive(); render(); });
