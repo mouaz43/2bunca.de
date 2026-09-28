@@ -506,6 +506,7 @@
           const num = Math.min(Number(raw||0), Number(it.stock_qty||0));
           state.cart.q[id] = num ? String(num) : '';
           persist();
+          updateOrderSidebarSummary();
         };
         inp.onblur = ()=> updateOrderSidebarSummary();
       });
